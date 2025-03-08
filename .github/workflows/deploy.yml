@@ -2,9 +2,15 @@ name: Deploy Application
 
 on:
   push:
-    branches: [ main ]
+    branches: 
+      - main
+      - develop
+      - staging
   pull_request:
-    branches: [ main ]
+    branches: 
+      - main
+      - develop
+      - staging
 
 jobs:
   build-and-deploy:
@@ -22,7 +28,6 @@ jobs:
     - name: Install Dependencies
       run: npm install
     
-    
     - name: Build
       run: npm run build
     
@@ -38,6 +43,7 @@ jobs:
     # Example for GitHub Pages:
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
+      if: github.ref == 'refs/heads/main' # Only deploy when pushing to main
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./dist
