@@ -1,0 +1,60 @@
+name: Deploy Application
+
+on:
+  push:
+    branches: 
+      - main
+      - develop
+      - staging
+  pull_request:
+    branches: 
+      - main
+      - develop
+      - staging
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-south-1
+
+    - name: Pull Environment Configuration
+      run: |
+        aws s3 cp s3://chat-bot-env-variables/.env ./.env
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install Dependencies
+      run: npm install
+    
+    - name: Build
+      run: npm run build
+    
+    - name: Cache Build
+      uses: actions/cache@v3
+      with:
+        path: |
+          dist
+          build
+        key: ${{ runner.os }}-build-${{ github.sha }}
+    
+    # Add deployment step based on your hosting platform
+    # Example for GitHub Pages:
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      if: github.ref == 'refs/heads/main' # Only deploy when pushing to main
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./dist
