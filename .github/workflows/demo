@@ -18,6 +18,8 @@ jobs:
     
     steps:
     - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # Fetch all history for git-based deployments
 
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
@@ -37,10 +39,17 @@ jobs:
         cache: 'npm'
     
     - name: Install Dependencies
-      run: npm install
+      run: |
+        npm ci  # Uses package-lock.json for deterministic installs
+        npm install -g pm2  # Install PM2 for process management
     
+    - name: Run Tests
+      run: npm test
+      
     - name: Build
       run: npm run build
+      env:
+        CI: true
     
     - name: Cache Build
       uses: actions/cache@v3
@@ -48,13 +57,26 @@ jobs:
         path: |
           dist
           build
+          node_modules
         key: ${{ runner.os }}-build-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
     
-    # Add deployment step based on your hosting platform
-    # Example for GitHub Pages:
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
-      if: github.ref == 'refs/heads/main' # Only deploy when pushing to main
+      if: github.ref == 'refs/heads/main'
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./dist
+        force_orphan: true  # Create a new orphan branch for deployment
+        full_commit_message: ${{ github.event.head_commit.message }}
+    
+    - name: Notify Deployment Status
+      if: always()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        fields: repo,message,commit,author,action,eventName,ref,workflow
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
