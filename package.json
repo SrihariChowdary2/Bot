@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "homepage": "https://sriharibabu.github.io/chat-bot",
+    "homepage": "https://sriharibabu.github.io/chat-bot"
   },
   "dependencies": {
     "@fastify/cors": "^11.0.0",
